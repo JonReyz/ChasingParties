@@ -1,3 +1,8 @@
 import React from "react"
+import EventCard from "../components/EventCard"
+export default () => 
+<div>
+Hello world!
 
-export default () => <div>Hello world!</div>
+<EventCard/>
+</div>
