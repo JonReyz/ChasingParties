@@ -2,6 +2,7 @@ from sanic import Sanic
 from sanic.response import json
 from sanic.request import RequestParameters
 from errors import field_not_found, database_error
+from events_db import create_new_event, get_all_events, delete_event, update_event
 from os import environ
 from asyncpg import connect, create_pool
 
@@ -20,8 +21,8 @@ async def start(app, loop):
 
     app.pool = await create_pool(
         dsn=conn,
-        min_size=10, #in bytes,
-        max_size=999, #in bytes,
+        min_size=1,
+        max_size=10, 
         max_queries=50000,
         max_inactive_connection_lifetime=300,
         loop=loop
@@ -34,22 +35,9 @@ async def close_connection(app, loop):
     async with pool.acquire() as conn:
         await conn.close()
 
-
-@app.listener('after_server_stop')
-async def close_connection(app, loop):
-    pool = app.config['pool']
-    async with pool.acquire() as conn:
-        await conn.close()
-
 @app.route("/")
 async def test(request):
 	return json({"hello": "world"})
-
-
-
-
-
-
 
 ## Em todo endpoint eu tenho que:
 #  	- verificar quais informações chegam pra ele
@@ -70,6 +58,7 @@ async def create_event(request):
 	event_dict["description"]  = request.json.get("description")
 	event_dict["image_url"]  = request.json.get("image_url")
 
+
 	if not event_dict["name"]:
 		return field_not_found("name")
 
@@ -79,20 +68,23 @@ async def create_event(request):
 	if not event_dict["category"]:
 		return field_not_found("category")
 
-	result_of_query = await create_event(pool, event_dict)
+	result_of_query = await create_new_event(pool, event_dict)
 
+	print("Nome do maluco", pool)
 	if result_of_query == 0: 
 		return database_error()
 
-	return json({"message": "suceffuly created event", "name": event_dict["name"]})
+	return json({"message": "suceffuly created event", "name": "Helrou"})
 		
+
+
 @app.route("/events", methods=["GET"])
 async def get_events(request):
 	pool = request.app.pool
 	list_of_events = await get_all_events(pool)
 	if not list_of_events: 
 		return database_error()
-	return json({list_of_events})
+	return json(list_of_events)
 
 
 
@@ -105,7 +97,7 @@ async def create_event(request):
 	if not event_dict["id"]:
 		return field_not_found("id")
 
-	result_of_query = await delete_event(pool, event_dict)
+	result_of_query = await delete_event(pool, event_dict["id"])
 
 	if result_of_query == 0: 
 		return database_error()

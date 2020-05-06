@@ -1,6 +1,10 @@
+from sanic import Sanic
+from sanic.response import json
+
 
 def field_not_found(field):
-	return{ "message":"Necessary field " + field + "is missing"}
+	return json({ "message":"Necessary field " + field + "is missing"})
 
 def database_error():
-	return{ "message":"Something wrong with the query"}
+	print("hey")
+	return json({ "message":"Something wrong with the query"})
