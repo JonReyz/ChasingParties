@@ -22,9 +22,12 @@ async def create_new_event(pool, event_dict):
 
     except Exception as e:
         logger.error(f"Failed to fetch events from database: {type(e).__name__}")
-
+    finally:
+        await connection.close()
+    
     return is_working
 
+#dar o release, usando finally
 async def get_all_events(pool):
     connection = await pool.acquire()
     data = {}
@@ -34,7 +37,9 @@ async def get_all_events(pool):
     except Exception as e:
         logger.error(f"Failed to fetch events from database: {type(e).__name__}")
         return data 
-
+    finally:
+        await connection.close()
+    
     data = events_to_dict(result_query)
     
 
@@ -51,6 +56,9 @@ async def delete_event(pool, id):
     except Exception as e:
         logger.error(f"Failed to fetch events from database: {type(e).__name__}")
         return is_working
+
+    finally:
+        await connection.close()
 
     return is_working
 
@@ -71,14 +79,44 @@ async def update_event(pool, event_dict):
     except Exception as e:
         logger.error(f"Failed to fetch events from database: {type(e).__name__}")
 
+    finally:
+        await connection.close()
+
     return is_working
 
 
 
+async def get_events_filter(pool, category, start_date):
+    connection = await pool.acquire()
+    alreadyOne = False
+    result_query = {}
+    query  = "select * from events where "
+    queryAND = "AND"
+    if category != None:
+        query = query + f"category = '{category}' "
+        alreadyOne = True
+    if start_date !=None:
+        if alreadyOne:
+            query = query + "AND "
+        query = query + f"start_date >= '{start_date}' "
+
+    try:
+        print(query)
+        result_query = await connection.fetch(query)
+        
+    except Exception as e:
+        logger.error(f"Failed to fetch events from database: {type(e).__name__}")
+        return {}
+    finally:
+        await connection.close()
+
+    result_query = events_to_dict(result_query)
+    
+    return result_query
+
 
 def events_to_dict(result):
     list_of_record = []
-
     for record in result:
         dicto = {
             "id" : record["id"],
@@ -89,5 +127,4 @@ def events_to_dict(result):
             "image_url": record["image_url"]
         }
         list_of_record.append(dicto)
-
     return list_of_record

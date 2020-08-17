@@ -1,12 +1,16 @@
 from sanic import Sanic
 from sanic.response import json
 from sanic.request import RequestParameters
+from sanic_cors import CORS, cross_origin
 from errors import field_not_found, database_error
-from events_db import create_new_event, get_all_events, delete_event, update_event
+from events_db import create_new_event, get_all_events, delete_event, update_event, get_events_filter
 from os import environ
 from asyncpg import connect, create_pool
 
 app = Sanic()
+CORS(app)
+
+
 
 @app.listener('before_server_start')
 async def start(app, loop):
@@ -47,7 +51,6 @@ async def test(request):
 # 	- tratamento de erros
 # 	- retornar mensagem
 
-
 @app.route("/events", methods=["POST"])
 async def create_event(request):
 	pool = request.app.pool
@@ -70,22 +73,42 @@ async def create_event(request):
 
 	result_of_query = await create_new_event(pool, event_dict)
 
-	print("Nome do maluco", pool)
 	if result_of_query == 0: 
 		return database_error()
 
 	return json({"message": "suceffuly created event", "name": "Helrou"})
 		
-
-
+#retornar um array vazio, parece q n resolveu
 @app.route("/events", methods=["GET"])
 async def get_events(request):
+	nullarray = {}
 	pool = request.app.pool
 	list_of_events = await get_all_events(pool)
 	if not list_of_events: 
-		return database_error()
+		return json(nullarray)
+
 	return json(list_of_events)
 
+
+@app.route("/events/filter", methods=["POST"])
+async def get_events(request):
+	pool = request.app.pool
+	event_dict = {}
+	category = None
+	start_date = None
+	event_dict["start_date"]  = request.json.get("start_date") 
+	event_dict["category"]  = request.json.get("category")
+	
+	if event_dict["category"]:
+		category = event_dict["category"]
+
+	if event_dict["start_date"]: 
+		start_date = event_dict["start_date"]
+
+
+	result = await get_events_filter(pool, category, start_date)
+
+	return json(result)
 
 
 @app.route("/events", methods=["DELETE"])
@@ -103,7 +126,6 @@ async def create_event(request):
 		return database_error()
 
 	return json({"message": "suceffuly deleted event"})
-
 
 @app.route("/events", methods=["PUT"])
 async def create_event(request):

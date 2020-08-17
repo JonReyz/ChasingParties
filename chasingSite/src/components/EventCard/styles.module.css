@@ -1,15 +1,16 @@
-.container{
+.card{
 	display: flex;
 	flex-direction: column;
 	width:300px;
-	height:500px;
+	margin-left: 20px;
+	margin-top:20px;
+	background: #E9E8FE;
 	border-radius: 4px;
 	border: 2px 2px 2px 2px;
-}
+}		
 
 
 .image{
-	width: 300px;
 	height:200px;
 	object-fit: cover;
 }
